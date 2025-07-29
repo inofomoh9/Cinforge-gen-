@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CINFORGE Genesis v1</title>
+  <style>
+    body {
+      margin: 0; font-family: sans-serif; background-color: #000; color: #fff; text-align: center;
+    }
+    textarea {
+      width: 90%; max-width: 800px; height: 120px; font-size: 1rem; padding: 10px;
+    }
+    #scene {
+      margin-top: 30px; padding: 20px; font-size: 2rem; background: #111;
+      height: 300px; display: flex; justify-content: center; align-items: center;
+      border: 2px solid #222; text-shadow: 2px 2px 6px #000;
+    }
+    button {
+      padding: 12px 24px; margin: 10px; font-size: 1rem; background: teal; color: white; border: none; border-radius: 5px;
+    }
+    video {
+      margin-top: 20px; max-width: 90%;
+    }
+  
+    #scene {
+      background-size: cover;
+      background-position: center;
+      transition: background-image 1s ease-in-out;
+      animation: fadeIn 1s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    </style>
+    
+</head>
+<body>
+  <h1 style="font-size: 2.5rem; margin-top: 20px; color: #00ffc3;">🎬 CINFORGE Genesis v1</h1>
+  <p>Type your trailer or short film script. CINFORGE will simulate scene-by-scene narration and export the trailer.</p>
+  <textarea id="scriptInput" placeholder="In a dark world... a boy must rise. The fate of mankind depends on him."></textarea><br/>
+  <button onclick="startCinematic()">🎥 Start CINFORGE</button>
+  <button onclick="downloadTrailer()">⬇️ Download Trailer</button>
+
+  <div id="scene">Your movie scenes will appear here...</div>
+  <video id="preview" controls style="display: none;"></video>
+
+  <script>
+    let recorder, chunks = [], mediaStream;
+
+    async function startCinematic() {
+      const scenes = document.getElementById("scriptInput").value.split(/[.!?]\s*/).filter(s => s.length > 2);
+      if (scenes.length === 0) return alert("Please enter a valid script.");
+
+      const display = document.getElementById("scene");
+      const preview = document.getElementById("preview");
+      preview.style.display = "none";
+
+      mediaStream = display.captureStream(30);
+      recorder = new MediaRecorder(mediaStream);
+      chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        preview.src = url;
+        preview.style.display = "block";
+        preview.play();
+      };
+
+      recorder.start();
+      let i = 0;
+
+      
+    const backgrounds = [
+      'https://images.unsplash.com/photo-1504384308090-c894fdcc538d',
+      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438',
+      'https://images.unsplash.com/photo-1601758003122-58e5f85a1f9b',
+      'https://images.unsplash.com/photo-1508923567004-3a6b8004f3d3',
+      'https://images.unsplash.com/photo-1522199794611-8e8f9a2dd57f'
+    ];
+
+    function nextScene() {
+
+        if (i >= scenes.length) {
+          recorder.stop();
+          display.innerHTML = "🎬 The End";
+          return;
+        }
+        const line = scenes[i];
+        
+    display.innerHTML = line;
+    display.style.backgroundImage = `url('${backgrounds[i % backgrounds.length]}')`;
+
+        const utter = new SpeechSynthesisUtterance(line);
+        utter.pitch = 1;
+        utter.rate = 0.95;
+        utter.volume = 1;
+        utter.lang = "en-US";
+        speechSynthesis.speak(utter);
+        utter.onend = () => {
+          setTimeout(() => { i++; nextScene(); }, 1000);
+        };
+      }
+
+      nextScene();
+    }
+
+    function downloadTrailer() {
+      if (!chunks.length) return alert("No trailer recorded.");
+      const blob = new Blob(chunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "cinforge_trailer.webm";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+
+<audio id="bgMusic" loop>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mp3">
+</audio>
+<img id="character" src="https://cdn-icons-png.flaticon.com/512/1995/1995629.png" style="position:absolute; bottom:20px; right:20px; width:120px; opacity:0.85; animation:bounce 2s infinite;">
+<style>
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+</style>
+<script>
+  document.getElementById('bgMusic').play();
+</script>
+
+<video id="trailerPreview" controls style="display:none; width:100%; max-width:720px; margin-top:20px;"></video>
+<script>
+  let mediaRecorder;
+  let recordedChunks = [];
+
+  function startRecording() {
+    const display = document.getElementById("display");
+    const stream = display.captureStream();
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = function(event) {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = function() {
+      const blob = new Blob(recordedChunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+      const video = document.getElementById("trailerPreview");
+      video.src = url;
+      video.style.display = "block";
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "cinforge_trailer.webm";
+      a.textContent = "⬇ Download Trailer Video";
+      a.style.display = "inline-block";
+      a.style.marginTop = "10px";
+      document.body.appendChild(a);
+    };
+
+    mediaRecorder.start();
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+    }
+  }
+
+  function simulateTrailer(scriptLines) {
+    let i = 0;
+    const display = document.getElementById("display");
+
+    startRecording();
+
+    const interval = setInterval(() => {
+      if (i >= scriptLines.length) {
+        clearInterval(interval);
+        stopRecording();
+        return;
+      }
+      const line = scriptLines[i];
+      const utter = new SpeechSynthesisUtterance(line);
+      speechSynthesis.speak(utter);
+      display.innerText = line;
+      i++;
+    }, 3000);
+  }
+
+  function startCinforge() {
+    const input = document.getElementById("scriptInput").value;
+    const scriptLines = input.split(/[.!?\n]/).filter(s => s.trim().length);
+    simulateTrailer(scriptLines);
+  }
+</script>
+</body>
+
+
+</html>
